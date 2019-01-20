@@ -52,8 +52,43 @@ def save_html(inputData, filename):
     pretty_html = html.prettify()
     with open(filename, "w") as file:
         file.write(pretty_html)
-    
+
+def build_URL():
+    "https://www.immobilienscout24.de/Suche/S-T/Wohnung-
+
+############### SEARCH SETTINGS ##############
+
+# required inputs
+housingType = "Miete"
+province = "Nordrhein-Westfalen"
+city = "Koeln"
+
+# optional data
+roomMin = str(2) # don't forget ",00" in link!
+roomMax = str(5)
+sizeMin = str(45) # don't forget ",00" in link!
+sizeMax = str(80)
+priceMin = str(500) # don't forget "EURO" and ",00" in link!
+priceMax = str(1000)
+
+# link examples
+'''
+Some examples of different search result links for a quick lookup.
+For rent, just city, no other filters, page 1:
+"https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln?enteredFrom=one_step_search"
+For rent, filtered for spans of rent, qm, rooms, page 1:
+"https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00?enteredFrom=result_list"
+For rent, filtered for spans of rent, qm, rooms, page 2:
+"https://www.immobilienscout24.de/Suche/S-T/P-2/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00"
+'''
+
 ################# SCRIPT #####################
+
+
+
+
+
+
 
 # get date and time
 currDateTime = datetime.datetime.now()
