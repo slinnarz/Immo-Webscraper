@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from requests import get
-from requests.exceptions import RequestException
 from contextlib import closing
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -11,13 +10,17 @@ import datetime
 
 '''
 To DOs:
-    - write loop that builds URLs for each result page and gets the data
+    - write loop that builds URLs for each result page and gets the data;
+        Problem: when looping, CSS filters of "get_item" function doesnt work
+        properly on addresses (works for page 1, doesnt for page 2).
     - save raw data and result-file in a designated result folder
     - expand script: automatically get data for biggest cities (according to wikipedia list)
       in Germany
+    - make "optinal" search parameters optional
     - tidy up the code
 In progress:
-    - build_URL function
+    - Trying to fix CSS filter problem, when iterating over result pages.
+        Next step: compare html files of page 1 and 2 of search results
 '''
 
 
@@ -39,15 +42,13 @@ def save_html(inputData, filename):
     with open(filename, "w") as file:
         file.write(pretty_html)
 
-def build_URL(page, housingType, province, city, roomMin, roomMax,
-              sizeMin, sizeMax, priceMin, priceMax):
+def build_URL_withFilters(page, housingType, province, city, roomMin, roomMax,
+                          sizeMin, sizeMax, priceMin, priceMax):
     '''
-    Care: URL of first site of search results differs from other pages.
-    If first page is visited via setting the page counter to 1, search results
-    on page 1 are different.
+    Builds the search site urls according to some filters set in the script.
     '''
     url = ("https://www.immobilienscout24.de/Suche/S-T/" +
-            "P-" + page + "/" +
+            "P-" + str(page) + "/" +
             "Wohnung-" + housingType + "/" +
             province + "/" +
             city + "/" +
@@ -58,6 +59,17 @@ def build_URL(page, housingType, province, city, roomMin, roomMax,
             priceMin + ",00" + "-" + priceMax + ",00")
     return url
 
+def build_URL_withoutFilters(page, province, city):
+    '''
+    Builds the search site urls according to some filters set in the script.
+    '''
+    url = ("https://www.immobilienscout24.de/Suche/S-T/" +
+            "P-" + str(page) + "/" +
+            "Wohnung-" + housingType + "/" +
+            province + "/" +
+            city)
+    return url
+
 def get_items(adress = True, cost = True, rooms = True, size = True):
     '''
     Get values for specified item from html-file.
@@ -66,6 +78,7 @@ def get_items(adress = True, cost = True, rooms = True, size = True):
         cost
         rooms
         size
+    Function has to be shortened but works for now.
     '''
     if adress == True:
         itemSelection = html.select('div > button div')
@@ -100,66 +113,142 @@ def get_items(adress = True, cost = True, rooms = True, size = True):
 '''
 Some examples of different search result links for a quick lookup.
 For rent, just city, no other filters, page 1:
-"https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln?enteredFrom=one_step_search"
+    "https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln?enteredFrom=one_step_search"
 For rent, filtered for spans of rent, qm, rooms, page 1:
-"https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00?enteredFrom=result_list"
+    "https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00?enteredFrom=result_list"
 For rent, filtered for spans of rent, qm, rooms, page 2:
-"https://www.immobilienscout24.de/Suche/S-T/P-2/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00"
+    "https://www.immobilienscout24.de/Suche/S-T/P-2/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00"
+No filter except of city:
+    "https://www.immobilienscout24.de/Suche/S-T/P-2/Wohnung-Miete/Nordrhein-Westfalen/Koeln"
 '''
         
 
 ############### SEARCH SETTINGS ##############
+
+## required inputs
+#housingType = "Miete"
+#province = "Nordrhein-Westfalen"
+#city = "Koeln"
+#
+## optional data
+#'''
+#Problem, that needs to be solved: when using all filters below,
+#CSS filter for adress search doesnt find adress of first search result
+#of each result page.
+#'''
+#roomMin = str(2) # don't forget ",00" in link!
+#roomMax = str(5)
+#sizeMin = str(45) # don't forget ",00" in link!
+#sizeMax = str(80)
+#priceMin = str(500) # don't forget "EURO" and ",00" in link!
+#priceMax = str(1000)
+#
+#
+################## SCRIPT #####################
+#
+## get date and time
+#currDateTime = datetime.datetime.now()
+## get raw html
+##raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00?enteredFrom=one_step_search")
+#raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/P-1/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00/")
+## save raw html
+#save_html(raw_html, "immoscout" + "_" +
+#          currDateTime.strftime("%Y%m%d_%H%M") + "_" +
+#          #"resultPage" + page + # Zeile aktivieren, wenn per Schleife alle Ergebnisseiten abgefragt werden sollen
+#          ".html")
+## parse html
+#html = BeautifulSoup(raw_html, "html.parser")    
+#    
+## get text data from html
+#ADDcol = get_items()[0]
+#ROOMcol = get_items()[1]
+#COSTcol = get_items()[2]
+#SIZEcol = get_items()[3]
+#
+## put data together into dataframe
+#data = {'Quadratmeter':SIZEcol, 'Zimmerzahl':ROOMcol,
+#        'Kaltmiete':COSTcol, 'Adresse':ADDcol}
+#df = pd.DataFrame(data)
+#
+## output data to .csv-file
+#df.to_csv('webData.csv')
+
+
+
+##############
+# Code-Tests #
+##############
 
 # required inputs
 housingType = "Miete"
 province = "Nordrhein-Westfalen"
 city = "Koeln"
 
-# optional data
-roomMin = str(2) # don't forget ",00" in link!
-roomMax = str(5)
-sizeMin = str(45) # don't forget ",00" in link!
-sizeMax = str(80)
-priceMin = str(500) # don't forget "EURO" and ",00" in link!
-priceMax = str(1000)
-
-
-################# SCRIPT #####################
-
 # get date and time
 currDateTime = datetime.datetime.now()
-# get raw html
-raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00?enteredFrom=one_step_search")
-# save raw html
-save_html(raw_html, "immoscout" + "_" +
-          currDateTime.strftime("%Y%m%d_%H%M") + "_" +
-          #"resultPage" + page + # Zeile aktivieren, wenn per Schleife alle Ergebnisseiten abgefragt werden sollen
-          ".html")
-# parse html
-html = BeautifulSoup(raw_html, "html.parser")    
+
+# manually set max. result pages
+max_pages = 5
+# create empty data frame for saving search results
+allDataDf = pd.DataFrame({'Quadratmeter':(), 'Zimmerzahl':(),
+            'Kaltmiete':(), 'Adresse':()})
+
+for page in range(1, max_pages+1):
+    url = build_URL_withoutFilters(page, province, city)
+    raw_html = simple_get(url)
+    save_html(raw_html, "immoscout" + "_" +
+              currDateTime.strftime("%Y%m%d_%H%M") + "_" +
+              "resultPage" + str(page) + # Zeile aktivieren, wenn per Schleife alle Ergebnisseiten abgefragt werden sollen
+              ".html")
+    html = BeautifulSoup(raw_html, "html.parser")  
+    ADDcol = get_items()[0]
+    ROOMcol = get_items()[1]
+    COSTcol = get_items()[2]
+    SIZEcol = get_items()[3]
+    data = {'Quadratmeter':SIZEcol, 'Zimmerzahl':ROOMcol,
+            'Kaltmiete':COSTcol, 'Adresse':ADDcol}
+    allDataDf = allDataDf.append(pd.DataFrame(data), ignore_index=True)
     
-# get text data from html
-ADDcol = get_items()[0]
-ROOMcol = get_items()[1]
-COSTcol = get_items()[2]
-SIZEcol = get_items()[3]
-
-# Daten in Dataframe zusammenfassen
-data = {'Quadratmeter':SIZEcol, 'Zimmerzahl':ROOMcol, 'Kaltmiete':COSTcol, 'Adresse':ADDcol}
-df = pd.DataFrame(data)
-
-# Daten in .csv-File ausgeben
-df.to_csv('webData.csv')
-
-#with open('webData.cvs', 'w') as file:
-#    file.write(df)
-
-##############
-# Code-Tests #
-##############   
     
-
-
-
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
