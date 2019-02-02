@@ -10,17 +10,17 @@ import datetime
 
 '''
 To DOs:
-    - write loop that builds URLs for each result page and gets the data;
-        Problem: when looping, CSS filters of "get_item" function doesnt work
-        properly on addresses (works for page 1, doesnt for page 2).
+    - Fix problem: CSS selector doesnt get attributes when numbers are entered
+        as a span (happens, when an ad contains multiple flats; e.g. "Rooms: 3-5")
+    - looping over result pages: automatically get max. result page number
+        (e.g. with CSS selector, must be somewhere in html code)
     - save raw data and result-file in a designated result folder
     - expand script: automatically get data for biggest cities (according to wikipedia list)
       in Germany
-    - make "optinal" search parameters optional
+    - make "optional" search parameters optional
     - tidy up the code
 In progress:
-    - Trying to fix CSS filter problem, when iterating over result pages.
-        Next step: compare html files of page 1 and 2 of search results
+    - 
 '''
 
 
@@ -85,22 +85,20 @@ def get_items(adress = True, cost = True, rooms = True, size = True):
         ADDcol = list()
         for i, j in enumerate(itemSelection, 1):
             ADDcol.append(j.getText())
-        ADDcol = ADDcol[1:len(ADDcol)]
         # filter empty list entries
         ADDcol = list(filter(None, ADDcol))
     if cost == True:
         itemSelection = html.find_all(class_="font-nowrap font-line-xs")
         COSTcol = list()
         for i, j in enumerate(itemSelection, 1):
-            if (i+2) % 3 == 0 and i != 0:
-                COSTcol.append(j.getText())
+            if i % 3 == 0 and i != 0:
+                COSTcol.append(j.getText()[0])           
     if rooms == True:
         itemSelection = html.find_all(class_="font-nowrap font-line-xs")
         ROOMcol = list()
         for i, j in enumerate(itemSelection, 1):
-            if i % 3 == 0 and i != 0:
-                # Zieht den Text aus dem Tag und speichert erstes Stringelement in Liste
-                ROOMcol.append(j.getText()[0])
+            if (i+2) % 3 == 0 and i != 0:
+                ROOMcol.append(j.getText())
     if size == True:
         itemSelection = html.find_all(class_="font-nowrap font-line-xs")
         SIZEcol = list()
@@ -145,33 +143,33 @@ No filter except of city:
 #
 #
 ################## SCRIPT #####################
-#
-## get date and time
-#currDateTime = datetime.datetime.now()
-## get raw html
-##raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00?enteredFrom=one_step_search")
-#raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/P-1/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00/")
-## save raw html
-#save_html(raw_html, "immoscout" + "_" +
-#          currDateTime.strftime("%Y%m%d_%H%M") + "_" +
-#          #"resultPage" + page + # Zeile aktivieren, wenn per Schleife alle Ergebnisseiten abgefragt werden sollen
-#          ".html")
-## parse html
-#html = BeautifulSoup(raw_html, "html.parser")    
-#    
-## get text data from html
-#ADDcol = get_items()[0]
-#ROOMcol = get_items()[1]
-#COSTcol = get_items()[2]
-#SIZEcol = get_items()[3]
-#
-## put data together into dataframe
-#data = {'Quadratmeter':SIZEcol, 'Zimmerzahl':ROOMcol,
-#        'Kaltmiete':COSTcol, 'Adresse':ADDcol}
-#df = pd.DataFrame(data)
-#
-## output data to .csv-file
-#df.to_csv('webData.csv')
+
+# get date and time
+currDateTime = datetime.datetime.now()
+# get raw html
+#raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00?enteredFrom=one_step_search")
+raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/P-1/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00/")
+# save raw html
+save_html(raw_html, "immoscout" + "_" +
+          currDateTime.strftime("%Y%m%d_%H%M") + "_" +
+          #"resultPage" + page + # Zeile aktivieren, wenn per Schleife alle Ergebnisseiten abgefragt werden sollen
+          ".html")
+# parse html
+html = BeautifulSoup(raw_html, "html.parser")    
+    
+# get text data from html
+ADDcol = get_items()[0]
+ROOMcol = get_items()[1]
+COSTcol = get_items()[2]
+SIZEcol = get_items()[3]
+
+# put data together into dataframe
+data = {'Quadratmeter':SIZEcol, 'Zimmerzahl':ROOMcol,
+        'Kaltmiete':COSTcol, 'Adresse':ADDcol}
+df = pd.DataFrame(data)
+
+# output data to .csv-file
+df.to_csv('webData.csv')
 
 
 
