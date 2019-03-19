@@ -123,10 +123,10 @@ No filter except of city:
 
 ############### SEARCH SETTINGS ##############
 
-## required inputs
-#housingType = "Miete"
-#province = "Nordrhein-Westfalen"
-#city = "Koeln"
+# required inputs
+housingType = "Miete"
+province = "Nordrhein-Westfalen"
+city = "Koeln"
 #
 ## optional data
 #'''
@@ -140,42 +140,9 @@ No filter except of city:
 #sizeMax = str(80)
 #priceMin = str(500) # don't forget "EURO" and ",00" in link!
 #priceMax = str(1000)
-#
-#
-################## SCRIPT #####################
-
-# get date and time
-currDateTime = datetime.datetime.now()
-# get raw html
-#raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00?enteredFrom=one_step_search")
-raw_html = simple_get("https://www.immobilienscout24.de/Suche/S-T/P-1/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/-/-/EURO--1000,00/")
-# save raw html
-save_html(raw_html, "immoscout" + "_" +
-          currDateTime.strftime("%Y%m%d_%H%M") + "_" +
-          #"resultPage" + page + # Zeile aktivieren, wenn per Schleife alle Ergebnisseiten abgefragt werden sollen
-          ".html")
-# parse html
-html = BeautifulSoup(raw_html, "html.parser")    
-    
-# get text data from html
-ADDcol = get_items()[0]
-ROOMcol = get_items()[1]
-COSTcol = get_items()[2]
-SIZEcol = get_items()[3]
-
-# put data together into dataframe
-data = {'Quadratmeter':SIZEcol, 'Zimmerzahl':ROOMcol,
-        'Kaltmiete':COSTcol, 'Adresse':ADDcol}
-df = pd.DataFrame(data)
-
-# output data to .csv-file
-df.to_csv('webData.csv')
 
 
-
-##############
-# Code-Tests #
-##############
+################# SCRIPT #####################
 
 # required inputs
 housingType = "Miete"
@@ -186,26 +153,56 @@ city = "Koeln"
 currDateTime = datetime.datetime.now()
 
 # manually set max. result pages
-max_pages = 5
+max_pages = 1
 # create empty data frame for saving search results
 allDataDf = pd.DataFrame({'Quadratmeter':(), 'Zimmerzahl':(),
             'Kaltmiete':(), 'Adresse':()})
 
 for page in range(1, max_pages+1):
+    # build result page URL
     url = build_URL_withoutFilters(page, province, city)
+    # get html data
     raw_html = simple_get(url)
+    # save raw html data to file
     save_html(raw_html, "immoscout" + "_" +
               currDateTime.strftime("%Y%m%d_%H%M") + "_" +
               "resultPage" + str(page) + # Zeile aktivieren, wenn per Schleife alle Ergebnisseiten abgefragt werden sollen
               ".html")
-    html = BeautifulSoup(raw_html, "html.parser")  
+    # parse html
+    html = BeautifulSoup(raw_html, "html.parser")
+    # get text from html
     ADDcol = get_items()[0]
     ROOMcol = get_items()[1]
     COSTcol = get_items()[2]
     SIZEcol = get_items()[3]
+    # put data into dataframe
     data = {'Quadratmeter':SIZEcol, 'Zimmerzahl':ROOMcol,
             'Kaltmiete':COSTcol, 'Adresse':ADDcol}
     allDataDf = allDataDf.append(pd.DataFrame(data), ignore_index=True)
+    
+# output data to .csv-file
+allDataDf.to_csv('webData.csv')   
+
+
+##############
+# Code-Tests #
+##############
+
+
+# get html tags: 'script'
+completeScriptData_html = html.select('script')
+# get text list from list of tags
+completeScriptData_text = [tag.getText() for tag in completeScriptData_html] 
+
+# filter text list for the right item using length of string
+scriptDataHousing = [item for item in completeScriptData_text if (len(item) >= 25000)]
+scriptDataHousing = scriptDataHousing[0]
+    
+# regex for searching for housing data in script text
+searchRegex = "\"attribute\":\[[a-zA-Z0-9]*\]{1}"
+
+# search for housing data using regex
+housingData = re.findall(searchRegex, scriptDataHousing)
     
     
     
