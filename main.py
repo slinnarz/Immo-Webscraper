@@ -6,6 +6,7 @@ from contextlib import closing
 from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
+import io
 
 
 '''
@@ -39,8 +40,11 @@ def save_html(inputData, filename):
     """
     html = BeautifulSoup(inputData, "html.parser")
     pretty_html = html.prettify()
-    with open(filename, "w") as file:
+    with io.open(filename, "w", encoding="utf-8") as file:
         file.write(pretty_html)
+
+#    with open(filename, "w") as file:
+#        file.write(pretty_html)
 
 def build_URL_withFilters(page, housingType, province, city, roomMin, roomMax,
                           sizeMin, sizeMax, priceMin, priceMax):
