@@ -6,6 +6,9 @@ from contextlib import closing
 from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
+import io
+import smtplib, ssl # for sending e-mails
+
 
 
 '''
@@ -20,8 +23,21 @@ To DOs:
     - make "optional" search parameters optional
     - tidy up the code
 In progress:
-    - 
+    - check if URL exists
+    - send automated mail if url doesnt exist
+    - --> get ssl connection to work
 '''
+
+
+################# GLOBAL VARIABLES #####################
+
+# set up email connection
+mailServer = "smtp.web.de"
+mailServerPort = 587
+mailAddress = "testmail@web.de"
+
+# set email message
+message = "An error occurred while trying to reach an URL for web scraping. Please check your web scraping setup."
 
 
 ################# DEFINE FUNCTIONS #####################
@@ -33,14 +49,38 @@ def simple_get(url):
     with closing(get(url, stream=True)) as resp:
         return resp.content
 
+def check_url(url, sendError=False):
+    """
+    Checks if URL exists.
+    Automated Mail can be sent if it doesn't.
+    """
+    code = get(url).status_code
+    if sendError == True and code != 200:
+        """
+        WRITE CODE TO SEND MAIL 
+        """
+        sender_email = input("Please enter e-mail address: ")
+        port = mailServerPort
+        password = input("Please enter password: ")
+        # Create secure SSL context
+        context = ssl.create_default_context()
+        server = smtplib.SMTP(mailServer, port)
+        server.starttls(context=context)
+        server.login(sender_email, password)
+        server.sendmail(sender_email, message)
+
+    return code
 def save_html(inputData, filename):
     """
     Convert raw html data to html text and save it to a file.
     """
     html = BeautifulSoup(inputData, "html.parser")
     pretty_html = html.prettify()
-    with open(filename, "w") as file:
+    with io.open(filename, "w", encoding="utf-8") as file:
         file.write(pretty_html)
+
+#    with open(filename, "w") as file:
+#        file.write(pretty_html)
 
 def build_URL_withFilters(page, housingType, province, city, roomMin, roomMax,
                           sizeMin, sizeMax, priceMin, priceMax):
@@ -161,6 +201,8 @@ allDataDf = pd.DataFrame({'Quadratmeter':(), 'Zimmerzahl':(),
 for page in range(1, max_pages+1):
     # build result page URL
     url = build_URL_withoutFilters(page, province, city)
+    # check if URL exists
+
     # get html data
     raw_html = simple_get(url)
     # save raw html data to file
