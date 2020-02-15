@@ -7,9 +7,11 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import datetime
 import io
+import smtplib, ssl # for sending e-mails
 
 
-'''
+
+"""
 To DOs:
     - Fix problem: CSS selector doesnt get attributes when numbers are entered
         as a span (happens, when an ad contains multiple flats; e.g. "Rooms: 3-5")
@@ -21,11 +23,24 @@ To DOs:
     - make "optional" search parameters optional
     - tidy up the code
 In progress:
-    - 
-'''
+    - check if URL exists
+    - send automated mail if url doesnt exist
+    - --> get ssl connection to work
+"""
 
 
-################# DEFINE FUNCTIONS #####################
+# GLOBAL VARIABLES
+
+# set up email connection
+mailServer = "smtp.web.de"
+mailServerPort = 587
+mailAddress = "testmail@web.de"
+
+# set email message
+message = "An error occurred while trying to reach an URL for web scraping. Please check your web scraping setup."
+
+
+# DEFINE FUNCTIONS
 
 def simple_get(url):
     """
@@ -33,6 +48,31 @@ def simple_get(url):
     """
     with closing(get(url, stream=True)) as resp:
         return resp.content
+
+
+def check_url(url, ):
+    """
+    Checks if URL exists.
+    """
+    code = get(url).status_code
+    return code
+
+
+def send_error_mail(error_code, sender_email, password, port, server, send_error=True):
+    """
+    Automated Mail can be sent if it doesn't.
+    """
+    if send_error is True and error_code != 200:
+        sender_email = input("Please enter e-mail address: ")
+        port = mailServerPort
+        password = input("Please enter password: ")
+        # Create secure SSL context
+        context = ssl.create_default_context()
+        server = smtplib.SMTP(mailServer, port)
+        server.starttls(context=context)
+        server.login(sender_email, password)
+        server.sendmail(sender_email, message)
+
 
 def save_html(inputData, filename):
     """
@@ -165,6 +205,8 @@ allDataDf = pd.DataFrame({'Quadratmeter':(), 'Zimmerzahl':(),
 for page in range(1, max_pages+1):
     # build result page URL
     url = build_URL_withoutFilters(page, province, city)
+    # check if URL exists
+
     # get html data
     raw_html = simple_get(url)
     # save raw html data to file
