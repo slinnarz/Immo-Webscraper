@@ -117,44 +117,53 @@ def build_url(page, housing_type, province, city):
     return url
 
 
-def get_items(html, adress=True, cost=True, rooms=True, size=True):
+def get_address(html):
     """
-    Get values for specified item from html-file.
-    Allowed inputs (must be str):
-        adress
-        cost
-        rooms
-        size
-    Function has to be shortened but works for now.
+    Get address from html file.
+    """
+    item_selection = html.select('div > button div')
+    add_col = list()
+    for i, j in enumerate(item_selection, 1):
+        add_col.append(j.getText())
+    # filter empty list entries
+    add_col = list(filter(None, add_col))
+    return add_col
 
-    TO DO: resolve problem with rturn statement (parts could not be assigned)
+
+def get_cost(html):
     """
-    if adress is True:
-        item_selection = html.select('div > button div')
-        add_col = list()
-        for i, j in enumerate(item_selection, 1):
-            add_col.append(j.getText())
-        # filter empty list entries
-        add_col = list(filter(None, add_col))
-    if cost is True:
-        item_selection = html.find_all(class_="font-nowrap font-line-xs")
-        cost_col = list()
-        for i, j in enumerate(item_selection, 1):
-            if i % 3 == 0 and i != 0:
-                cost_col.append(j.getText()[0])
-    if rooms is True:
-        item_selection = html.find_all(class_="font-nowrap font-line-xs")
-        room_col = list()
-        for i, j in enumerate(item_selection, 1):
-            if (i+2) % 3 == 0 and i != 0:
-                room_col.append(j.getText())
-    if size is True:
-        item_selection = html.find_all(class_="font-nowrap font-line-xs")
-        size_col = list()
-        for i, j in enumerate(item_selection, 1):
-            if (i+1) % 3 == 0 and i != 0:
-                size_col.append(j.getText())
-    return add_col, cost_col, room_col, size_col
+    Get cost from html file.
+    """
+    item_selection = html.find_all(class_="font-nowrap font-line-xs")
+    cost_col = list()
+    for i, j in enumerate(item_selection, 1):
+        if i % 3 == 0 and i != 0:
+            cost_col.append(j.getText()[0])
+    return cost_col
+
+
+def get_rooms(html):
+    """
+    Get number of rooms from html file.
+    """
+    item_selection = html.find_all(class_="font-nowrap font-line-xs")
+    room_col = list()
+    for i, j in enumerate(item_selection, 1):
+        if (i+2) % 3 == 0 and i != 0:
+            room_col.append(j.getText())
+    return room_col
+
+
+def get_size(html):
+    """
+    Get dwelling size from html file.
+    """
+    item_selection = html.find_all(class_="font-nowrap font-line-xs")
+    size_col = list()
+    for i, j in enumerate(item_selection, 1):
+        if (i+1) % 3 == 0 and i != 0:
+            size_col.append(j.getText())
+    return size_col
 
 
 # link examples
@@ -180,19 +189,22 @@ searchHousingType = "Miete"
 searchProvince = "Nordrhein-Westfalen"
 searchCity = "Koeln"
 
-#
-## optional inputs
-#'''
-#Problem, that needs to be solved: when using all filters below,
-#CSS filter for adress search doesnt find adress of first search result
-#of each result page.
-#'''
-#room_min = str(2) # don't forget ",00" in link!
-#room_max = str(5)
-#size_min = str(45) # don't forget ",00" in link!
-#size_max = str(80)
-#price_min = str(500) # don't forget "EURO" and ",00" in link!
-#price_max = str(1000)
+
+# optional inputs
+"""
+Uncomment following block if you want to use search filters.
+
+To Do:
+When using all filters below,
+CSS filter for address search doesnt find adress of first search result
+of each result page.
+"""
+# searchRoomMmin = str(2)   # don't forget ",00" in link!
+# searchRoomMax = str(5)
+# searchSizeMin = str(45)  # don't forget ",00" in link!
+# searchSizeMax = str(80)
+# searchPriceMin = str(500)    # don't forget "EURO" and ",00" in link!
+# searchPriceMax = str(1000)
 
 
 # SCRIPT
@@ -221,10 +233,10 @@ for resultPage in range(1, max_pages+1):
     # parse html
     parsedHtml = BeautifulSoup(raw_html, "html.parser")
     # get text from html
-    addColText = get_items(html=parsedHtml)[0]
-    roomColText = get_items(html=parsedHtml)[1]
-    costColText = get_items(html=parsedHtml)[2]
-    sizeColText = get_items(html=parsedHtml)[3]
+    addColText = get_address(html=parsedHtml)
+    roomColText = get_rooms(html=parsedHtml)
+    costColText = get_cost(html=parsedHtml)
+    sizeColText = get_size(html=parsedHtml)
     # put data into dataframe
     data = {'Quadratmeter': sizeColText, 'Zimmerzahl': roomColText,
             'Kaltmiete': costColText, 'Adresse': addColText}
