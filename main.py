@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 from requests import get
 from contextlib import closing
 from bs4 import BeautifulSoup
@@ -31,6 +32,9 @@ In progress:
 
 # GLOBAL VARIABLES
 
+# data path
+htmlDataPath = "C:\\Users\\Stefan\\PycharmProjects\\Immo-Webscraper"
+
 # set up email connection
 mailServer = "smtp.web.de"
 mailServerPort = 587
@@ -41,6 +45,11 @@ message = "An error occurred while trying to reach an URL for web scraping. Plea
 
 
 # DEFINE FUNCTIONS
+
+def create_folder(path, name):
+    if not os.path.isdir(path+"\\"+name):
+        os.mkdir(path+"\\"+name)
+
 
 def simple_get(url):
     """
@@ -82,38 +91,29 @@ def save_html(input_data, filename):
     with io.open(filename, "w", encoding="utf-8") as file:
         file.write(pretty_html)
 
-#    with open(filename, "w") as file:
-#        file.write(pretty_html)
 
-
-def build_url_with_filters(page, housing_type, province, city, room_min, room_max,
-                           size_min, size_max, price_min, price_max):
-    """
-    Builds the search site urls according to some filters set in the script.
-    TO DO: merge with other build_url function.
-    """
-    url = ("https://www.immobilienscout24.de/Suche/S-T/" +
-           "P-" + str(page) + "/" +
-           "Wohnung-" + housing_type + "/" +
-           province + "/" +
-           city + "/" +
-           "-/" +  # find out which filter this is for
-           room_min + ",00" + "-" + room_max + ",00" + "/" +
-           size_min + ",00" + "-" + size_max + ",00" + "/" +
-           "EURO-" +
-           price_min + ",00" + "-" + price_max + ",00")
-    return url
-
-
-def build_url(page, housing_type, province, city):
+def build_url(page, housing_type, province, city, filters=False, room_min="0", room_max="0",
+              size_min="0", size_max="0", price_min="0", price_max="0"):
     """
     Builds the search site urls according to some filters set in the script.
     """
-    url = ("https://www.immobilienscout24.de/Suche/S-T/" +
-           "P-" + str(page) + "/" +
-           "Wohnung-" + housing_type + "/" +
-           province + "/" +
-           city)
+    if filters is True:
+        url = ("https://www.immobilienscout24.de/Suche/S-T/" +
+               "P-" + str(page) + "/" +
+               "Wohnung-" + housing_type + "/" +
+               province + "/" +
+               city + "/" +
+               "-/" +  # find out which filter this is for
+               room_min + ",00" + "-" + room_max + ",00" + "/" +
+               size_min + ",00" + "-" + size_max + ",00" + "/" +
+               "EURO-" +
+               price_min + ",00" + "-" + price_max + ",00")
+    else:
+        url = ("https://www.immobilienscout24.de/Suche/S-T/" +
+               "P-" + str(page) + "/" +
+               "Wohnung-" + housing_type + "/" +
+               province + "/" +
+               city)
     return url
 
 
@@ -212,8 +212,11 @@ of each result page.
 # get date and time
 currDateTime = datetime.datetime.now()
 
+# create raw data folder
+create_folder(path=htmlDataPath, name="html_data")
+
 # manually set max. result pages
-max_pages = 1
+max_pages = 20
 # create empty data frame for saving search results
 allDataDf = pd.DataFrame({'Quadratmeter': (), 'Zimmerzahl': (),
                          'Kaltmiete': (), 'Adresse': ()})
@@ -226,24 +229,24 @@ for resultPage in range(1, max_pages+1):
     # get html data
     raw_html = simple_get(url=pageUrl)
     # save raw html data to file
-    save_html(raw_html, "immoscout" + "_" +
+    save_html(raw_html, htmlDataPath + "\\" + "html_data\\" + "immoscout" + "_" +
               currDateTime.strftime("%Y%m%d_%H%M") + "_" +
               "resultPage" + str(resultPage) +    # dont comment out if all result pages are to be scraped
               ".html")
-    # parse html
-    parsedHtml = BeautifulSoup(raw_html, "html.parser")
-    # get text from html
-    addColText = get_address(html=parsedHtml)
-    roomColText = get_rooms(html=parsedHtml)
-    costColText = get_cost(html=parsedHtml)
-    sizeColText = get_size(html=parsedHtml)
-    # put data into dataframe
-    data = {'Quadratmeter': sizeColText, 'Zimmerzahl': roomColText,
-            'Kaltmiete': costColText, 'Adresse': addColText}
-    allDataDf = allDataDf.append(pd.DataFrame(data), ignore_index=True)
+    # # parse html
+    # parsedHtml = BeautifulSoup(raw_html, "html.parser")
+    # # get text from html
+    # addColText = get_address(html=parsedHtml)
+    # roomColText = get_rooms(html=parsedHtml)
+    # costColText = get_cost(html=parsedHtml)
+    # sizeColText = get_size(html=parsedHtml)
+    # # put data into dataframe
+    # data = {'Quadratmeter': sizeColText, 'Zimmerzahl': roomColText,
+    #         'Kaltmiete': costColText, 'Adresse': addColText}
+    # allDataDf = allDataDf.append(pd.DataFrame(data), ignore_index=True)
     
-# output data to .csv-file
-allDataDf.to_csv('webData.csv')   
+# # output data to .csv-file
+# allDataDf.to_csv('webData.csv')
 
 
 ##############
