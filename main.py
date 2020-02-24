@@ -260,18 +260,18 @@ create_folder(path=htmlDataPath + "\\html_data", name=currDateTime.strftime("%Y%
 # manually set max. result pages
 max_pages = 500
 
-# for resultPage in range(1, max_pages+1):
-#     # build result page URL
-#     pageUrl = build_url(page=resultPage, housing_type=searchHousingType, province=searchProvince)
-#     # check if URL exists
-#
-#     # get html data
-#     raw_html = simple_get(url=pageUrl)
-#     # save raw html data to file
-#     save_html(raw_html, htmlDataPath + "\\html_data\\" + currDateTime.strftime("%Y%m%d_%H%M") + "\\immoscout" + "_" +
-#               currDateTime.strftime("%Y%m%d_%H%M") + "_" +
-#               "resultPage" + str(resultPage) +    # dont comment out if all result pages are to be scraped
-#               ".html")
+for resultPage in range(1, max_pages+1):
+    # build result page URL
+    pageUrl = build_url(page=resultPage, housing_type=searchHousingType, province=searchProvince)
+    # check if URL exists
+
+    # get html data
+    raw_html = simple_get(url=pageUrl)
+    # save raw html data to file
+    save_html(raw_html, htmlDataPath + "\\html_data\\" + currDateTime.strftime("%Y%m%d_%H%M") + "\\immoscout" + "_" +
+              currDateTime.strftime("%Y%m%d_%H%M") + "_" +
+              "resultPage" + str(resultPage) +    # dont comment out if all result pages are to be scraped
+              ".html")
 
 # create empty data frame for saving search results
 allDataDf = pd.DataFrame({'Quadratmeter': (), 'Zimmerzahl': (),
@@ -307,4 +307,5 @@ for htmlFile in os.listdir(htmlDataPath + "\\html_data" + "\\20200223_1605"):
 ##############
 # Code-Tests #
 ##############
+
 
