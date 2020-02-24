@@ -92,79 +92,117 @@ def save_html(input_data, filename):
         file.write(pretty_html)
 
 
-def build_url(page, housing_type, province, city, filters=False, room_min="0", room_max="0",
+def build_url(page, housing_type, province, city="", filters=False, room_min="0", room_max="0",
               size_min="0", size_max="0", price_min="0", price_max="0"):
     """
     Builds the search site urls according to some filters set in the script.
     """
-    if filters is True:
-        url = ("https://www.immobilienscout24.de/Suche/S-T/" +
-               "P-" + str(page) + "/" +
-               "Wohnung-" + housing_type + "/" +
-               province + "/" +
-               city + "/" +
-               "-/" +  # find out which filter this is for
-               room_min + ",00" + "-" + room_max + ",00" + "/" +
-               size_min + ",00" + "-" + size_max + ",00" + "/" +
-               "EURO-" +
-               price_min + ",00" + "-" + price_max + ",00")
-    else:
-        url = ("https://www.immobilienscout24.de/Suche/S-T/" +
-               "P-" + str(page) + "/" +
-               "Wohnung-" + housing_type + "/" +
-               province + "/" +
-               city)
-    return url
+    if housing_type == "Wohnung-Miete":
+        if filters is True:
+            url = ("https://www.immobilienscout24.de/Suche/S-T/" +
+                   "P-" + str(page) + "/" +
+                   "Wohnung-" + housing_type + "/" +
+                   province + "/" +
+                   city + "/" +
+                   "-/" +  # find out which filter this is for
+                   room_min + ",00" + "-" + room_max + ",00" + "/" +
+                   size_min + ",00" + "-" + size_max + ",00" + "/" +
+                   "EURO-" +
+                   price_min + ",00" + "-" + price_max + ",00")
+            return url
+        else:
+            url = ("https://www.immobilienscout24.de/Suche/S-T/" +
+                   "P-" + str(page) + "/" +
+                   "Wohnung-" + housing_type + "/" +
+                   province + "/" +
+                   city)
+            return url
+    if housing_type == "haus-kaufen":
+        if filters is True:
+            print("Filters for 'haus-kaufen' have not yet been implemented.")
+        else:
+            url = ("https://www.immobilienscout24.de/Suche/de/" +
+                   "nordrhein-westfalen/" + "haus-kaufen?pagenumber=" + str(page))
+            return url
 
 
-def get_address(html):
+def get_address(html, housing_type):
     """
     Get address from html file.
     """
-    item_selection = html.select('div > button div')
+    if housing_type == "Wohnung-Mieten":
+        item_selection = html.select('div > button div')
+    else:
+        item_selection = html.select('button[title="Auf der Karte anzeigen"]')
     add_col = list()
     for i, j in enumerate(item_selection, 1):
-        add_col.append(j.getText())
+        add_col.append(j.getText().strip())  # .strip() gets rid of all '\n'
     # filter empty list entries
     add_col = list(filter(None, add_col))
     return add_col
 
 
-def get_cost(html):
+def get_cost(html, housing_type):
     """
     Get cost from html file.
     """
-    item_selection = html.find_all(class_="font-nowrap font-line-xs")
-    cost_col = list()
-    for i, j in enumerate(item_selection, 1):
-        if i % 3 == 0 and i != 0:
-            cost_col.append(j.getText()[0])
-    return cost_col
+    if housing_type == "Wohnung-Mieten":
+        item_selection = html.find_all(class_="font-nowrap font-line-xs")
+        cost_col = list()
+        for i, j in enumerate(item_selection, 1):
+            if i % 3 == 0 and i != 0:
+                cost_col.append(j.getText()[0])
+        return cost_col
+    else:
+        item_selection = html.select('dl[class="grid-item result-list-entry__primary-criterion"]')
+        cost_col = list()
+        for i, j in enumerate(item_selection, 1):
+            if i == 0 or (i+2) % 3 == 0:
+                cost_col.append(j.getText().strip())
+        cost_col = [item.split()[0] for item in cost_col]  # if (len(item.split()) == 3)]
+        return cost_col
 
 
-def get_rooms(html):
+def get_rooms(html, housing_type):
     """
     Get number of rooms from html file.
     """
-    item_selection = html.find_all(class_="font-nowrap font-line-xs")
-    room_col = list()
-    for i, j in enumerate(item_selection, 1):
-        if (i+2) % 3 == 0 and i != 0:
-            room_col.append(j.getText())
-    return room_col
+    if housing_type == "Wohnung-Mieten":
+        item_selection = html.find_all(class_="font-nowrap font-line-xs")
+        room_col = list()
+        for i, j in enumerate(item_selection, 1):
+            if (i+2) % 3 == 0 and i != 0:
+                room_col.append(j.getText())
+        return room_col
+    else:
+        item_selection = html.select('dl[class="grid-item result-list-entry__primary-criterion"]')
+        room_col = list()
+        for i, j in enumerate(item_selection, 1):
+            if i % 3 == 0 and i != 0:
+                room_col.append(j.getText().strip())
+        room_col = [item.split()[0] for item in room_col]  # if (len(item.split()) == 4)]
+        return room_col
 
 
-def get_size(html):
+def get_size(html, housing_type):
     """
     Get dwelling size from html file.
     """
-    item_selection = html.find_all(class_="font-nowrap font-line-xs")
-    size_col = list()
-    for i, j in enumerate(item_selection, 1):
-        if (i+1) % 3 == 0 and i != 0:
-            size_col.append(j.getText())
-    return size_col
-
+    if housing_type == "Wohnung-Mieten":
+        item_selection = html.find_all(class_="font-nowrap font-line-xs")
+        size_col = list()
+        for i, j in enumerate(item_selection, 1):
+            if (i+1) % 3 == 0 and i != 0:
+                size_col.append(j.getText())
+        return size_col
+    else:
+        item_selection = html.select('dl[class="grid-item result-list-entry__primary-criterion"]')
+        size_col = list()
+        for i, j in enumerate(item_selection, 1):
+            if (i+1) % 3 == 0 and i != 0:
+                size_col.append(j.getText().strip())
+        size_col = [item.split()[0] for item in size_col]  # if (len(item.split()) == 3)]
+        return size_col
 
 # link examples
 
@@ -177,15 +215,18 @@ For rent, filtered for spans of rent, qm, rooms, page 1:
     "https://www.immobilienscout24.de/Suche/S-T/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00?enteredFrom=result_list"
 For rent, filtered for spans of rent, qm, rooms, page 2:
     "https://www.immobilienscout24.de/Suche/S-T/P-2/Wohnung-Miete/Nordrhein-Westfalen/Koeln/-/2,00-45,00/30,00-110,00/EURO-500,00-2000,00"
-No filter except of city:
+For rent, no filter except of city:
     "https://www.immobilienscout24.de/Suche/S-T/P-2/Wohnung-Miete/Nordrhein-Westfalen/Koeln"
+For sale, filtered for province:
+    "https://www.immobilienscout24.de/Suche/de/nordrhein-westfalen/haus-kaufen?pagenumber=2" (about 20.000 results total)
 """
         
 
 # SEARCH SETTINGS
 
 # required inputs
-searchHousingType = "Miete"
+# searchHousingType = "Wohnung-Miete"
+searchHousingType = "haus-kaufen"
 searchProvince = "Nordrhein-Westfalen"
 searchCity = "Koeln"
 
@@ -214,41 +255,56 @@ currDateTime = datetime.datetime.now()
 
 # create raw data folder
 create_folder(path=htmlDataPath, name="html_data")
+create_folder(path=htmlDataPath + "\\html_data", name=currDateTime.strftime("%Y%m%d_%H%M"))
 
 # manually set max. result pages
-max_pages = 20
+max_pages = 500
+
+# for resultPage in range(1, max_pages+1):
+#     # build result page URL
+#     pageUrl = build_url(page=resultPage, housing_type=searchHousingType, province=searchProvince)
+#     # check if URL exists
+#
+#     # get html data
+#     raw_html = simple_get(url=pageUrl)
+#     # save raw html data to file
+#     save_html(raw_html, htmlDataPath + "\\html_data\\" + currDateTime.strftime("%Y%m%d_%H%M") + "\\immoscout" + "_" +
+#               currDateTime.strftime("%Y%m%d_%H%M") + "_" +
+#               "resultPage" + str(resultPage) +    # dont comment out if all result pages are to be scraped
+#               ".html")
+
 # create empty data frame for saving search results
 allDataDf = pd.DataFrame({'Quadratmeter': (), 'Zimmerzahl': (),
                          'Kaltmiete': (), 'Adresse': ()})
 
-for resultPage in range(1, max_pages+1):
-    # build result page URL
-    pageUrl = build_url(page=resultPage, housing_type=searchHousingType, province=searchProvince, city=searchCity)
-    # check if URL exists
-
-    # get html data
-    raw_html = simple_get(url=pageUrl)
-    # save raw html data to file
-    save_html(raw_html, htmlDataPath + "\\" + "html_data\\" + "immoscout" + "_" +
-              currDateTime.strftime("%Y%m%d_%H%M") + "_" +
-              "resultPage" + str(resultPage) +    # dont comment out if all result pages are to be scraped
-              ".html")
-    # # parse html
-    # parsedHtml = BeautifulSoup(raw_html, "html.parser")
-    # # get text from html
-    # addColText = get_address(html=parsedHtml)
-    # roomColText = get_rooms(html=parsedHtml)
-    # costColText = get_cost(html=parsedHtml)
-    # sizeColText = get_size(html=parsedHtml)
-    # # put data into dataframe
-    # data = {'Quadratmeter': sizeColText, 'Zimmerzahl': roomColText,
-    #         'Kaltmiete': costColText, 'Adresse': addColText}
-    # allDataDf = allDataDf.append(pd.DataFrame(data), ignore_index=True)
+# read data from html files
+for htmlFile in os.listdir(htmlDataPath + "\\html_data" + "\\20200223_1605"):
+    with open(htmlDataPath + "\\html_data" + "\\20200223_1605\\" + htmlFile, "r") as raw_html:
+        print(htmlFile)
+        try:
+            # parse html
+            parsedHtml = BeautifulSoup(raw_html, "html.parser")
+            # get text from html
+            # adresses
+            addColText = get_address(html=parsedHtml, housing_type='haus-kaufen')
+            # room numbers
+            roomColText = get_rooms(html=parsedHtml, housing_type='haus-kaufen')
+            # sale prices
+            costColText = get_cost(html=parsedHtml, housing_type='haus-kaufen')
+            # house sizes
+            sizeColText = get_size(html=parsedHtml, housing_type='haus-kaufen')
+            # put data into dataframe
+            data = {'Quadratmeter': sizeColText, 'Zimmerzahl': roomColText,
+                    'Preis': costColText, 'Adresse': addColText}
+            allDataDf = allDataDf.append(pd.DataFrame(data), ignore_index=True)
+        except UnicodeDecodeError:
+            print("Error while trying to decode " + htmlFile)
     
-# # output data to .csv-file
+# output data to .csv-file
 # allDataDf.to_csv('webData.csv')
 
 
 ##############
 # Code-Tests #
 ##############
+
